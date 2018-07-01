@@ -1,53 +1,42 @@
-from __future__ import print_function
-from bs4 import BeautifulSoup
-from gi.repository import Notify
-import re
-import subprocess
-from mechanize import Browser
-import time
+# Code to check passport status in your terminal.
+
 import urllib
-import urllib2
+import tkinter.messagebox as tk
 
-changed = 0
+from bs4 import BeautifulSoup
 
-def Starting():
-    Notify.init("Checking status...")
-    Notify.Notification.new("\nPassport check initiated.").show()
+url = 'https://portal2.passportindia.gov.in/AppOnlineProject/statusTracker/trackStatusInpNew'
 
-def Check():
-    while changed != 1:
-        Starting()
-        main()
-        if changed == 1:
-            Notify()
-        time.sleep(3600) 
+user_info = {
+    'status': 'APPLICATION STATUS',
+    'file': 'FILE_NUMBER',
+    'dob': 'dd/mm/yyyy',
+}
 
-def Notify():
-    Notify.init("Status changed")
-    Notify.Notification.new("\nPassport status changed.").show()
+# Get information
+data = urllib.parse.urlencode(user_info)
 
-def main():
-    global changed
-    url = 'https://portal1.passportindia.gov.in/AppOnlineProject/statusTracker/trackStatusInpNew'
-    file_number = ''
-    date_of_birth = '' # dd / mm / yyyy
-    current_status = '' # copy and paste current application status
-    nav = Browser()
-    nav.set_handle_robots(False)
-    nav.addheaders = [('User-agent', 'Chrome')]
-    nav.open(url)
-    nav.select_form('track-status')
-    nav.form[nav.controls[0].name] = ['Application Status']
-    nav.form[nav.controls[1].name] = file_number
-    nav.form[nav.controls[2].name] = date_of_birth
-    response = BeautifulSoup(nav.submit())
-    tableClass = response.find("div", attrs={ "class": "block_right_inner" })
-    table = tableClass.find("table", attrs={ "role": "presentation" })
-    tableValue = table.find("td", attrs={ "": "" }).get_text()
+# Request data from server
+req = urllib.request.Request(url, data)
 
-    if current_status not in tableValue:
-        changed = 1
-        subprocess.call(['spd-say', '"Passport Status Changed!"'])
+# Collect response
+response = urllib.request.urlopen(req)
 
-if __main__ == '__main__':
-    Check()
+# Read the response received
+page = response.read()
+
+soup = BeautifulSoup(page)
+form = str(soup.findChildren('form')[1].findChildren('table')[0].findChildren('tr')[7].findChildren('td')[1])
+
+status = form.split('<td>')[1].split('</td>')[0]
+
+f = open('~/status.txt', 'r+')
+
+if status == f.readline():
+    pass
+else:
+    tk.showinfo(title="Passport-Status", message=status)
+    f.seek()
+    f.write(status)
+
+f.close()
