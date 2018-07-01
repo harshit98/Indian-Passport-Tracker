@@ -14,7 +14,7 @@ user_info = {
 }
 
 # Get information
-data = urllib.parse.urlencode(user_info)
+data = urllib.parse.urlencode(user_info).encode('utf-8')
 
 # Request data from server
 req = urllib.request.Request(url, data)
